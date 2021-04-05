@@ -1,16 +1,20 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import { CommandRequire } from "../../../api-commands/types";
 import { ApiCustomError } from "../../../tools/customErrors";
+import { httpMethodAllowed } from "../../../tools/http-tools";
+import { logger } from "../../../tools/logger";
 
 type ExecutionResults = { state: "error", error: any } | { state: "success", data: any }
 
-const knownCommands: { [key: string]: CommandRequire } = {
+const knownCommands: { [key: string]: any } = {
     authenticate: require("../../../api-commands/authenticate"),
-    createAdmin: require("../../../api-commands/createAdmin")
+    createadmin: require("../../../api-commands/createadmin"),
+    product: {
+        create: require("../../../api-commands/product/create"),
+    }
 }
 
-async function executeCommand(name: string, params: any): Promise<ExecutionResults> {
-    const commandTools = knownCommands[name];
+async function executeCommand(commandTools: CommandRequire, params: any): Promise<ExecutionResults> {
     const validation = commandTools.schema.safeParse(params);
     if (!validation.success) {
         return {
@@ -33,23 +37,37 @@ async function executeCommand(name: string, params: any): Promise<ExecutionResul
 }
 
 export default (req: NextApiRequest, res: NextApiResponse) => {
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" })
+    if (!httpMethodAllowed(req, res, ["POST"])) {
+        return;
     }
 
-    const { command } = req.query;
-    if (typeof command !== "string") {
+    const { command: commandSource } = req.query;
+
+    if (typeof commandSource !== "string") {
+        logger.warn({ data: commandSource }, "Invalid commandSource")
         return res.status(406).json({ error: "Invalid Command" })
     }
 
-    if (!knownCommands[command]) {
+    const commandSourceSplit = commandSource.split(".")
+    const [namespace, method] = commandSourceSplit
+
+    let commandTools;
+    if (method) {
+        commandTools = knownCommands[namespace][method]
+    } else {
+        commandTools = knownCommands[namespace]
+    }
+
+    if (!commandTools) {
+        logger.warn({ data: [namespace, method] }, "Invalid commandTools")
         return res.status(406).json({ error: "Invalid Command" })
     }
 
-    executeCommand(command, req.body).then(result => {
+    executeCommand(commandTools, req.body).then(result => {
+        let status = 200;
         if (result.state === "error") {
             let errorResponse;
-            let status = 400;
+            status = 400;
             if (result.error instanceof ApiCustomError) {
                 status = result.error.statusCode
                 errorResponse = { message: result.error.message }
@@ -62,13 +80,16 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
             res.status(status).json({
                 error: errorResponse
             })
+            logger.info({ status, command: commandSource, error: errorResponse }, "command unsuccessful")
         } else {
-            res.status(200).json({
+            res.status(status).json({
                 data: result.data
             })
+            logger.info({ status, command: commandSource }, "command successful")
         }
     }).catch(err => {
-        console.error(err);
-        res.status(500).json({ error: "server error!" })
+        const status = 500;
+        logger.fatal(err, "command failed: unknown exeception")
+        res.status(status).json({ error: "server error!" })
     })
 }

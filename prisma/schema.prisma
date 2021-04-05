@@ -29,12 +29,13 @@ model Role {
 }
 
 model Product {
-    id            Int                   @id @default(autoincrement())
-    name          String
-    description   String?
-    createdAt     DateTime              @default(now())
-    variantTypes  ProductVariantType[]
-    variantValues ProductVariantValue[]
+    id             Int                   @id @default(autoincrement())
+    name           String
+    description    String?
+    createdAt      DateTime              @default(now())
+    defaultVariant Json
+    variantTypes   ProductVariantType[]
+    variantValues  ProductVariantValue[]
 }
 
 model ProductVariantType {

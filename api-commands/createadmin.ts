@@ -2,10 +2,11 @@ import { ZodEmailPassword } from "../tools/zod-schemas";
 import * as z from 'zod';
 import { prisma } from "../prisma/client";
 import { hashPassword } from "../tools/crypto";
+import { CommandExecutorReturn } from "./types";
 
 const schema = ZodEmailPassword
 
-async function execute(params: z.infer<typeof schema>) {
+async function execute(params: z.infer<typeof schema>): Promise<CommandExecutorReturn> {
     const count = await prisma.user.findMany({ orderBy: { id: "asc" }, take: 1 })
     if (count.length !== 0) {
         return [null, new Error("Cannot create an admin user")]
