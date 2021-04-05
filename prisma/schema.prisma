@@ -1,0 +1,66 @@
+datasource db {
+    provider = "postgresql"
+    url      = "postgresql://dbuser:dbpassword@localhost:5432/justcommerce"
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model User {
+    id                     Int      @id @default(autoincrement())
+    createdAt              DateTime @default(now())
+    email                  String   @unique
+    password               String   @unique
+    firstName              String?
+    secondName             String?
+    role                   Role     @relation(fields: [roleId], references: [id])
+    roleId                 Int
+    orders                 Order[]
+    hasDashboardAccess     Boolean  @default(false)
+    requiresPasswordChange Boolean  @default(false)
+}
+
+model Role {
+    id        Int      @id @default(autoincrement())
+    name      String   @unique
+    users     User[]
+    createdAt DateTime @default(now())
+}
+
+model Product {
+    id            Int                   @id @default(autoincrement())
+    name          String
+    description   String?
+    createdAt     DateTime              @default(now())
+    variantTypes  ProductVariantType[]
+    variantValues ProductVariantValue[]
+}
+
+model ProductVariantType {
+    id            Int                   @id @default(autoincrement())
+    type          String
+    product       Product               @relation(fields: [productId], references: [id])
+    productId     Int
+    variantValues ProductVariantValue[]
+}
+
+model ProductVariantValue {
+    id                Int                @id @default(autoincrement())
+    value             String
+    priceCurrencyCode String
+    price             Decimal
+    pictures          Json?
+    product           Product            @relation(fields: [productId], references: [id])
+    productId         Int
+    variantType       ProductVariantType @relation(fields: [variantTypeId], references: [id])
+    variantTypeId     Int
+}
+
+model Order {
+    id        Int     @id @default(autoincrement())
+    user      User    @relation(fields: [userId], references: [id])
+    userId    Int
+    data      Json
+    fulfilled Boolean @default(false)
+}
