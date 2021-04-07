@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import { CommandRequire } from "../../../api-commands/types";
 import { ApiCustomError } from "../../../tools/customErrors";
-import { httpMethodAllowed } from "../../../tools/http-tools";
+import { httpMethodAllowed, httpRequestAuthorised } from "../../../tools/http-tools";
 import { logger } from "../../../tools/logger";
 
 type ExecutionResults = { state: "error", error: any } | { state: "success", data: any }
@@ -11,6 +11,9 @@ const knownCommands: { [key: string]: any } = {
     createadmin: require("../../../api-commands/createadmin"),
     product: {
         create: require("../../../api-commands/product/create"),
+    },
+    user: {
+        register: require("../../../api-commands/user/register")
     }
 }
 
@@ -51,6 +54,11 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
     const commandSourceSplit = commandSource.split(".")
     const [namespace, method] = commandSourceSplit
 
+    if (!namespace || !knownCommands[namespace]) {
+        logger.warn({ data: [namespace, method] }, "Invalid commandSource: Namespace is undefined")
+        return res.status(406).json({ error: "Invalid Command" })
+    }
+
     let commandTools;
     if (method) {
         commandTools = knownCommands[namespace][method]
@@ -61,6 +69,11 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
     if (!commandTools) {
         logger.warn({ data: [namespace, method] }, "Invalid commandTools")
         return res.status(406).json({ error: "Invalid Command" })
+    }
+
+    const auth = httpRequestAuthorised(req, res, commandTools.authContext);
+    if (!auth.authorised) {
+        return;
     }
 
     executeCommand(commandTools, req.body).then(result => {

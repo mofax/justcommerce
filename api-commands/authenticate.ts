@@ -4,19 +4,13 @@ import { prisma } from "../prisma/client";
 import { verifyStoredPassword } from "../tools/crypto";
 import { CommandExecutorReturn } from "./types";
 import { ApiCustomError } from "../tools/customErrors";
-import jwt from "jsonwebtoken"
+import { jwtSign } from "../tools/http-tools";
+
+const authContext = {
+    always: true,
+}
 
 const schema = ZodEmailPassword
-
-function jwtSign(data: any) {
-    const key = process.env.JWT_KEY
-    if (!key) {
-        throw new Error("environment variable JWT_KEY is not present.")
-    }
-    return jwt.sign({
-        data
-    }, key);
-}
 
 async function execute(params: z.infer<typeof schema>): Promise<CommandExecutorReturn> {
     const user = await prisma.user.findUnique({
@@ -34,11 +28,13 @@ async function execute(params: z.infer<typeof schema>): Promise<CommandExecutorR
         return [null, new ApiCustomError("Authentication failed!", 401)]
     }
     const token = {
-        id: user.id,
-        email: user.email,
-        hasDashboardAccess: user.hasDashboardAccess,
+        user: {
+            id: user.id,
+            email: user.email,
+            hasDashboardAccess: user.hasDashboardAccess,
+        }
     }
     return [jwtSign(token), null]
 }
 
-export { schema, execute }
+export { schema, execute, authContext }

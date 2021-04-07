@@ -3,6 +3,10 @@ import { prisma } from "../../prisma/client";
 import { CommandExecutorReturn } from "../types";
 import { defaultCurrency } from "../../tools/currencies";
 
+const authContext = {
+    dashboard: true
+}
+
 const schema = z.object({
     name: z.string(),
     description: z.string().optional(),
@@ -24,4 +28,4 @@ async function execute(params: z.infer<typeof schema>): Promise<CommandExecutorR
     return [product, null]
 }
 
-export { schema, execute }
+export { schema, execute, authContext }
