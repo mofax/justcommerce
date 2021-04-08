@@ -2,11 +2,15 @@ import * as z from 'zod';
 
 type CommandExecutorReturn = [null, Error] | [any, null]
 
-type CommandExecutor = (params: any) => Promise<CommandExecutorReturn>
+interface CommandContext {
+    auth: { user: { id: number, email: string, hasDashboardAccess: boolean} }
+}
+
+type CommandExecutor = (params: any, context: CommandContext) => Promise<CommandExecutorReturn>
 
 interface CommandRequire {
     schema: z.ZodSchema<any>
     execute: CommandExecutor
 }
 
-export type { CommandRequire, CommandExecutorReturn }
+export type { CommandRequire, CommandExecutorReturn, CommandContext}

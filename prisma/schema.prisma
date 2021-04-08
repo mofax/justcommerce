@@ -29,18 +29,18 @@ model Role {
 }
 
 model Product {
-    id             Int                   @id @default(autoincrement())
-    name           String
-    description    String?
-    createdAt      DateTime              @default(now())
-    defaultVariant Json
-    variantTypes   ProductVariantType[]
-    variantValues  ProductVariantValue[]
+    id            Int                   @id @default(autoincrement())
+    name          String
+    description   String?
+    createdAt     DateTime              @default(now())
+    variantTypes  ProductVariantType[]
+    variantValues ProductVariantValue[]
 }
 
 model ProductVariantType {
     id            Int                   @id @default(autoincrement())
     type          String
+    createdAt     DateTime              @default(now())
     product       Product               @relation(fields: [productId], references: [id])
     productId     Int
     variantValues ProductVariantValue[]
@@ -52,16 +52,30 @@ model ProductVariantValue {
     priceCurrencyCode String
     price             Decimal
     pictures          Json?
+    createdAt         DateTime           @default(now())
     product           Product            @relation(fields: [productId], references: [id])
     productId         Int
     variantType       ProductVariantType @relation(fields: [variantTypeId], references: [id])
     variantTypeId     Int
+    orderItems        OrderItem[]
 }
 
 model Order {
-    id        Int     @id @default(autoincrement())
-    user      User    @relation(fields: [userId], references: [id])
-    userId    Int
-    data      Json
-    fulfilled Boolean @default(false)
+    id         String      @id @default(cuid())
+    user       User        @relation(fields: [userId], references: [id])
+    userId     Int
+    fulfilled  Boolean     @default(false)
+    orderItems OrderItem[]
+    createdAt  DateTime    @default(now())
+}
+
+model OrderItem {
+    id                    String              @id @default(cuid())
+    Order                 Order               @relation(fields: [orderId], references: [id])
+    orderId               String
+    ProductVariantValue   ProductVariantValue @relation(fields: [productVariantValueId], references: [id])
+    productVariantValueId Int
+    numberOfItems         Int
+    pricePerItem          Decimal?
+    totalPrice            Decimal?
 }

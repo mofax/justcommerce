@@ -18,11 +18,6 @@ async function execute(params: z.infer<typeof schema>): Promise<CommandExecutorR
         data: {
             name: params.name,
             description: params.description,
-            defaultVariant: {
-                priceCurrencyCode: defaultCurrency.code,
-                price: params.price,
-                pictures: []
-            }
         }
     })
     return [product, null]

@@ -50,8 +50,9 @@ interface AuthContext {
     dashboard?: boolean
 }
 
-function httpRequestAuthorised(req: NextApiRequest, res: NextApiResponse, context: AuthContext) {
-    const yes = { authorised: true };
+type HttpRequestAuthorisedResponse = { authorised: false} | { authorised: true, user: any}
+function httpRequestAuthorised(req: NextApiRequest, res: NextApiResponse, context: AuthContext): HttpRequestAuthorisedResponse {
+    const yes = { authorised: true, user: {} };
     if (context) {
         if (context.always) return yes
 
