@@ -1,4 +1,6 @@
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { PrismaClient, Prisma } from '@prisma/client';
+const prisma = new PrismaClient();
 
-export { prisma }
+const PrismaDecimal = Prisma.Decimal;
+
+export { prisma, PrismaDecimal };
